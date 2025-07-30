@@ -14,6 +14,40 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
+
+
+
+        .custom-image-widget {
+            position: fixed !important;
+            top: 50px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            right: 0px;
+            z-index: 999;
+        }
+        
+        .custom-image {
+            width: 70px;
+            height: auto;
+            transition: transform 0.2s;
+        }
+        
+        .custom-image-widget:hover .custom-image {
+            transform: scale(1.2);
+        }
+        
+        .custom-image-widget:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+                
+        
+
+
+
+
+
+        
         :root {
             --primary: #df1783;
             --secondary: #8c318f;
@@ -178,6 +212,25 @@
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-dark-bg flex">
+
+
+
+
+     <div class="custom-image-widget" style="position: relative; display: inline-block;"> <!-- ADD THESE STYLES -->
+    <a href="https://bebell-digital-solutions.github.io/headquarters/es-v03">
+        <img class="custom-image" 
+             src="https://bucket.mlcdn.com/a/3336/3336910/images/138f14304ea21715dfae64ae5fe1d71b08c2d451.png" 
+             alt="Spanish Translation"
+             style="display: block;"> <!-- Ensure image is block-level -->
+    </a>
+
+</div>
+
+
+
+
+
+    
 
     <!-- Sidebar -->
     <div class="sidebar w-64 flex-shrink-0 flex flex-col p-6">
