@@ -291,14 +291,19 @@
 
         <!-- Calendar Section -->
         <section id="calendar" class="section hidden space-y-6">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-wrap justify-between items-center gap-4">
                 <h1 class="text-4xl font-bold">Calendar</h1>
                 <div class="flex items-center gap-4">
-                    <button id="download-ics-btn" class="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition-colors">
-                       <i data-lucide="download-cloud"></i> Download .ICS
-                    </button>
+                    <div class="flex items-center gap-2">
+                         <button id="sync-google-btn" class="btn bg-blue-500 hover:bg-blue-600 text-white text-sm py-2">
+                            <i data-lucide="link"></i> Sync with Google
+                        </button>
+                        <button id="download-ics-btn" class="btn bg-green-500 hover:bg-green-600 text-white text-sm py-2">
+                           <i data-lucide="download-cloud"></i> Download .ICS
+                        </button>
+                    </div>
                     <div class="flex items-center border rounded-lg p-1 bg-gray-200 dark:bg-gray-700">
-                        <button id="calendar-view-month" class="px-3 py-1 text-sm rounded-md bg-white dark:bg-gray-500">Month</button>
+                        <button id="calendar-view-month" class="px-3 py-1 text-sm rounded-md">Month</button>
                         <button id="calendar-view-week" class="px-3 py-1 text-sm rounded-md">Week</button>
                     </div>
                 </div>
@@ -547,7 +552,7 @@
                     </div>
                     <div class="mt-4 flex items-center gap-2 flex-wrap">
                         <span class="font-semibold text-sm">Filter by Tag:</span>
-                        ${allTags.length > 0 ? allTags.map(tag => `<button class="tag-filter-btn px-3 py-1 text-sm rounded-full ${state.activeTagFilter === tag ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-700'}" data-tag="${tag}">${tag}</button>`).join('') : '<span class="text-sm text-gray-500">No tags yet.</span>'}
+                        ${allTags.length > 0 ? allTags.map(tag => `<button class="tag-filter-btn px-3 py-1 text-sm rounded-full ${state.activeTagFilter === tag ? 'btn-primary' : 'bg-gray-200 dark:bg-gray-700'}" data-tag="${tag}">${tag}</button>`).join('') : '<span class="text-sm text-gray-500">No tags yet.</span>'}
                         ${state.activeTagFilter ? `<button id="clear-tag-filter-btn" class="text-sm text-red-500 hover:underline">Clear Filter</button>` : ''}
                     </div>
                 `;
@@ -629,31 +634,31 @@
                 `).join('');
             }
 
-            function renderCalendar() {
+            function updateCalendarViewToggle() {
+                const monthBtn = $('#calendar-view-month');
+                const weekBtn = $('#calendar-view-week');
+                const activeClasses = ['bg-white', 'dark:bg-gray-500', 'shadow'];
+                const inactiveClasses = ['bg-transparent', 'dark:bg-transparent', 'shadow-none'];
+
+                if (state.calendarView === 'month') {
+                    monthBtn.classList.add(...activeClasses);
+                    monthBtn.classList.remove(...inactiveClasses);
+                    weekBtn.classList.add(...inactiveClasses);
+                    weekBtn.classList.remove(...activeClasses);
+                } else {
+                    weekBtn.classList.add(...activeClasses);
+                    weekBtn.classList.remove(...inactiveClasses);
+                    monthBtn.classList.add(...inactiveClasses);
+                    monthBtn.classList.remove(...activeClasses);
+                }
+            }
+
+            function renderMonthlyCalendar() {
                 const calContainer = $('#calendar-container');
                 const calTitle = $('#calendar-title');
-                const todayTasksContainer = $('#calendar-today-tasks');
-                
                 const date = state.calendarDate;
-                calTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric'});
+                calTitle.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-                // Render Today's Tasks
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                const todaysTasks = state.tasks.filter(t => {
-                    if (!t.dueDate) return false;
-                    const taskDate = new Date(t.dueDate);
-                    taskDate.setHours(0,0,0,0);
-                    return taskDate.getTime() === today.getTime();
-                });
-                
-                if (todaysTasks.length > 0) {
-                    todayTasksContainer.innerHTML = todaysTasks.map(t => `<div class="p-2 rounded-md ${t.completed ? 'bg-green-100 dark:bg-green-900' : 'bg-blue-100 dark:bg-blue-900'}">${t.title}</div>`).join('<div class="my-2"></div>');
-                } else {
-                    todayTasksContainer.innerHTML = '<p class="text-gray-500">No tasks scheduled for today.</p>';
-                }
-
-                // Render Calendar Grid
                 const month = date.getMonth();
                 const year = date.getFullYear();
 
@@ -672,11 +677,11 @@
 
                 for (let i = 1; i <= daysInMonth; i++) {
                     const dayDate = new Date(year, month, i);
-                    dayDate.setHours(0,0,0,0);
+                    dayDate.setHours(0, 0, 0, 0);
                     const tasksOnDay = state.tasks.filter(t => {
                         if (!t.dueDate) return false;
                         const taskDate = new Date(t.dueDate);
-                        taskDate.setHours(0,0,0,0);
+                        taskDate.setHours(0, 0, 0, 0);
                         return taskDate.getTime() === dayDate.getTime();
                     });
 
@@ -689,6 +694,80 @@
                 }
                 gridHtml += '</div>';
                 calContainer.innerHTML = gridHtml;
+            }
+
+            function renderWeeklyCalendar() {
+                const calContainer = $('#calendar-container');
+                const calTitle = $('#calendar-title');
+                const date = new Date(state.calendarDate);
+
+                // Find Sunday of the current week
+                const firstDayOfWeek = new Date(date);
+                firstDayOfWeek.setDate(date.getDate() - date.getDay());
+                
+                // Find Saturday of the current week
+                const lastDayOfWeek = new Date(firstDayOfWeek);
+                lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+
+                const options = { month: 'long', day: 'numeric' };
+                calTitle.textContent = `${firstDayOfWeek.toLocaleDateString('en-US', options)} - ${lastDayOfWeek.toLocaleDateString('en-US', { ...options, year: 'numeric' })}`;
+
+                let gridHtml = '<div class="calendar-grid">';
+                'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',').forEach(day => {
+                    gridHtml += `<div class="calendar-header">${day}</div>`;
+                });
+
+                for (let i = 0; i < 7; i++) {
+                    const currentDay = new Date(firstDayOfWeek);
+                    currentDay.setDate(firstDayOfWeek.getDate() + i);
+                    currentDay.setHours(0, 0, 0, 0);
+                    
+                    const tasksOnDay = state.tasks.filter(t => {
+                        if (!t.dueDate) return false;
+                        const taskDate = new Date(t.dueDate);
+                        taskDate.setHours(0, 0, 0, 0);
+                        return taskDate.getTime() === currentDay.getTime();
+                    });
+                    
+                    let tasksHtml = tasksOnDay.map(t => `<div class="calendar-task text-xs p-1 my-1 rounded-md truncate" title="${t.title}">${t.title}</div>`).join('');
+                    
+                    gridHtml += `<div class="calendar-day">
+                        <div class="font-bold text-right">${currentDay.getDate()}</div>
+                        ${tasksHtml}
+                    </div>`;
+                }
+                gridHtml += '</div>';
+                calContainer.innerHTML = gridHtml;
+            }
+
+            function renderCalendar() {
+                const todayTasksContainer = $('#calendar-today-tasks');
+                
+                updateCalendarViewToggle();
+                if (state.calendarView === 'month') {
+                    renderMonthlyCalendar();
+                } else {
+                    renderWeeklyCalendar();
+                }
+
+                // Render Today's Tasks (common for both views)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todaysTasks = state.tasks.filter(t => {
+                    if (!t.dueDate) return false;
+                    const taskDate = new Date(t.dueDate);
+                    taskDate.setHours(0, 0, 0, 0);
+                    return taskDate.getTime() === today.getTime();
+                });
+                
+                if (todaysTasks.length > 0) {
+                    todayTasksContainer.innerHTML = todaysTasks.map(t => `<div class="p-2 rounded-md ${t.completed ? 'bg-green-100 dark:bg-green-900' : 'bg-blue-100 dark:bg-blue-900'}">${t.title}</div>`).join('<div class="my-2"></div>');
+                } else {
+                    todayTasksContainer.innerHTML = '<p class="text-gray-500">No tasks scheduled for today.</p>';
+                }
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
             }
             
             // --- MODAL & FORM LOGIC ---
@@ -926,6 +1005,51 @@
                     }
                 }
             }
+            
+            function openGoogleSyncModal() {
+                const tasksWithDates = state.tasks.filter(t => t.dueDate);
+                let modalContent;
+                if (tasksWithDates.length > 0) {
+                    modalContent = tasksWithDates.map(task => `
+                        <div class="flex justify-between items-center p-3 border-b dark:border-gray-700">
+                            <div>
+                                <div class="font-semibold">${task.title}</div>
+                                <div class="text-sm text-gray-500">${new Date(task.dueDate).toLocaleDateString()}</div>
+                            </div>
+                            <button class="add-to-google-btn btn btn-primary text-sm py-1 px-3" data-task-id="${task.id}">
+                               <i data-lucide="plus" class="w-4 h-4"></i> Add to Google
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    modalContent = `<p class="text-gray-500 text-center p-4">You have no tasks with due dates to sync.</p>`;
+                }
+                openModal('Sync Tasks with Google Calendar', modalContent);
+            }
+
+            function handleAddToGoogle(e) {
+                const button = e.target.closest('.add-to-google-btn');
+                if (!button) return;
+
+                const taskId = button.dataset.taskId;
+                const task = state.tasks.find(t => t.id === taskId);
+                if (!task || !task.dueDate) return;
+
+                function toGoogleDate(date) {
+                    return new Date(date).toISOString().replace(/-|:|\.\d{3}/g, '').split('T')[0];
+                }
+
+                const googleDate = toGoogleDate(task.dueDate);
+
+                const url = new URL('https://www.google.com/calendar/render');
+                url.searchParams.set('action', 'TEMPLATE');
+                url.searchParams.set('text', task.title);
+                url.searchParams.set('dates', `${googleDate}/${googleDate}`); // All-day event
+                url.searchParams.set('details', task.description || 'Task from Headquarters');
+                
+                window.open(url.toString(), '_blank');
+            }
+
 
             function setupEventListeners() {
                 // Navigation
@@ -939,7 +1063,6 @@
                     if (e.target.id === 'task-search-input') {
                         state.taskSearchQuery = e.target.value;
                         renderTasks();
-                        if (window.lucide) lucide.createIcons();
                     }
                 });
                 $('#tasks').addEventListener('click', e => {
@@ -947,12 +1070,10 @@
                         const tag = e.target.dataset.tag;
                         state.activeTagFilter = state.activeTagFilter === tag ? null : tag;
                         renderTasks();
-                        if (window.lucide) lucide.createIcons();
                     }
                     if (e.target.matches('#clear-tag-filter-btn')) {
                         state.activeTagFilter = null;
                         renderTasks();
-                        if (window.lucide) lucide.createIcons();
                     }
                 });
 
@@ -977,6 +1098,8 @@
                         closeModal();
                     }
                 });
+                $('#modal-body').addEventListener('click', handleAddToGoogle); // Delegated listener for google sync buttons
+
                 document.addEventListener('submit', (e) => {
                     if (e.target.matches('#task-form, #project-form, #note-form')) {
                         handleFormSubmit(e);
@@ -995,16 +1118,33 @@
 
                 // Calendar Controls
                 $('#calendar-prev').addEventListener('click', () => {
-                    state.calendarDate.setMonth(state.calendarDate.getMonth() - 1);
+                    if (state.calendarView === 'month') {
+                        state.calendarDate.setMonth(state.calendarDate.getMonth() - 1);
+                    } else {
+                        state.calendarDate.setDate(state.calendarDate.getDate() - 7);
+                    }
                     renderCalendar();
                 });
-                 $('#calendar-next').addEventListener('click', () => {
-                    state.calendarDate.setMonth(state.calendarDate.getMonth() + 1);
+                $('#calendar-next').addEventListener('click', () => {
+                    if (state.calendarView === 'month') {
+                        state.calendarDate.setMonth(state.calendarDate.getMonth() + 1);
+                    } else {
+                        state.calendarDate.setDate(state.calendarDate.getDate() + 7);
+                    }
+                    renderCalendar();
+                });
+                $('#calendar-view-month').addEventListener('click', () => {
+                    state.calendarView = 'month';
+                    renderCalendar();
+                });
+                $('#calendar-view-week').addEventListener('click', () => {
+                    state.calendarView = 'week';
                     renderCalendar();
                 });
 
-                // ICS Download
+                // ICS Download & Google Sync
                 $('#download-ics-btn').addEventListener('click', downloadICS);
+                $('#sync-google-btn').addEventListener('click', openGoogleSyncModal);
             }
 
             function downloadICS() {
